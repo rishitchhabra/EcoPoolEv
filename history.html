@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoPool EV - My Rides</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .history-container { max-width: 56rem; margin: 0 auto; padding: 2rem 1rem; }
+    .history-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+    .history-header h1 { font-size: 1.875rem; font-weight: 700; color: var(--gray-900); }
+    .co2-badge { background-color: var(--emerald-100); color: var(--emerald-800); padding: 0.5rem 1rem; border-radius: 9999px; font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem; }
+    
+    .ride-card { background-color: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); border: 1px solid var(--gray-100); transition: box-shadow 0.2s; display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1rem; flex-direction: column; }
+    @media (min-width: 768px) { .ride-card { flex-direction: row; } }
+    .ride-card:hover { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+    
+    .ride-info-col { flex: 1; width: 100%; display: flex; flex-direction: column; gap: 0.5rem; }
+    .ride-meta { display: flex; align-items: center; gap: 0.5rem; color: var(--gray-500); font-size: 0.875rem; margin-bottom: 0.5rem; }
+    .status-badge { padding: 0.125rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+    .status-completed { background-color: var(--green-100); color: var(--green-700); }
+    .status-confirmed { background-color: var(--blue-50); color: var(--blue-800); }
+    .status-in-progress { background-color: #fef3c7; color: #92400e; }
+    .status-cancelled { background-color: var(--red-50); color: var(--red-700); }
+    .status-searching { background-color: var(--gray-100); color: var(--gray-600); }
+    
+    .route-visualization { display: flex; align-items: center; gap: 0.75rem; }
+    .route-line { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+    .dot-start { width: 0.5rem; height: 0.5rem; background-color: var(--gray-400); border-radius: 50%; }
+    .line { width: 2px; height: 2rem; background-color: var(--gray-200); }
+    .dot-end { width: 0.5rem; height: 0.5rem; background-color: var(--emerald-600); border-radius: 50%; }
+    
+    .route-places { display: flex; flex-direction: column; gap: 1.1rem; flex: 1; }
+    .route-places p { font-weight: 500; color: var(--gray-900); }
+    
+    .ride-price-col { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 0.5rem; }
+    @media (min-width: 768px) { .ride-price-col { flex-direction: column; align-items: flex-end; width: auto; gap: 0.25rem; } }
+    .price { font-size: 1.25rem; font-weight: 700; color: var(--gray-900); }
+    .co2-saved { font-size: 0.875rem; color: var(--emerald-600); font-weight: 500; display: flex; align-items: center; gap: 0.25rem; }
+    
+    .track-btn { width: 100%; padding: 0.5rem 1.5rem; background-color: var(--gray-50); color: var(--gray-700); font-weight: 500; border-radius: 0.5rem; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid transparent; }
+    @media (min-width: 768px) { .track-btn { width: auto; } }
+    .track-btn:hover { background-color: var(--emerald-50); color: var(--emerald-700); border-color: var(--emerald-100); }
+
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--gray-500); }
+    .empty-state i { color: var(--gray-300); margin-bottom: 1rem; }
+    .empty-state h3 { color: var(--gray-700); font-size: 1.25rem; margin-bottom: 0.5rem; }
+    .empty-state a { color: var(--emerald-600); font-weight: 600; text-decoration: underline; }
+
+    .loading-state { text-align: center; padding: 3rem; color: var(--gray-400); }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="brand group">
+        <div class="brand-icon-wrapper group-hover">
+          <i data-lucide="leaf" style="width:24px; height:24px; stroke-width: 2.5px;"></i>
+        </div>
+        <span>EcoPool EV</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">Book a Ride</a>
+        <a href="history.html" class="nav-link">My Rides</a>
+        <a href="accessibility.html" class="nav-link">Accessibility</a>
+        <a href="login.html" class="nav-login-btn">
+          <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+          Login
+        </a>
+      </div>
+      <button class="mobile-menu-btn">
+        <i data-lucide="menu" style="width: 28px; height: 28px;"></i>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <div class="history-container">
+      <div class="history-header">
+        <h1>Your Ride History</h1>
+        <div class="co2-badge" id="totalCo2Badge">
+          <i data-lucide="leaf" style="width: 18px; height: 18px;"></i>
+          <span id="totalCo2">Total CO₂ Saved: calculating...</span>
+        </div>
+      </div>
+
+      <div id="rideList">
+        <div class="loading-state">
+          <i data-lucide="loader-circle" class="animate-spin" style="width: 32px; height: 32px;"></i>
+          <p style="margin-top: 0.5rem;">Loading your rides...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 EcoPool EV. Sustainable & Accessible Mobility.</p>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    (async () => {
+      // Require login
+      const user = await Auth.requireLogin();
+      if (!user) return;
+
+      const ridesContainer = document.getElementById('rideList');
+      const totalCo2El = document.getElementById('totalCo2');
+
+      try {
+        const res = await fetch('/api/rides');
+        if (!res.ok) throw new Error('Failed to fetch rides');
+        const data = await res.json();
+        const rides = data.rides;
+
+        if (!rides || rides.length === 0) {
+          ridesContainer.innerHTML = `
+            <div class="empty-state">
+              <i data-lucide="car" style="width: 48px; height: 48px;"></i>
+              <h3>No rides yet</h3>
+              <p>Your ride history will appear here once you book your first ride.</p>
+              <a href="index.html">Book Your First Ride →</a>
+            </div>
+          `;
+          totalCo2El.textContent = 'Total CO₂ Saved: 0 kg';
+          lucide.createIcons();
+          return;
+        }
+
+        // Calculate total CO2
+        let totalCo2 = 0;
+        rides.forEach(r => {
+          const co2Num = parseFloat(r.co2Saved);
+          if (!isNaN(co2Num)) totalCo2 += co2Num;
+        });
+        totalCo2El.textContent = `Total CO₂ Saved: ${totalCo2.toFixed(1)} kg`;
+
+        // Render rides
+        ridesContainer.innerHTML = '';
+        rides.forEach(ride => {
+          const statusClass = `status-${ride.status}`;
+          const formattedDate = new Date(ride.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          
+          // Format time
+          let formattedTime = ride.time;
+          if (ride.time && ride.time.includes(':')) {
+            const [h, m] = ride.time.split(':');
+            const hour = parseInt(h);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12;
+            formattedTime = `${displayHour}:${m} ${ampm}`;
+          }
+
+          const card = document.createElement('div');
+          card.className = 'ride-card';
+          card.innerHTML = `
+            <div class="ride-info-col">
+              <div class="ride-meta">
+                <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+                <span>${formattedDate} • ${formattedTime}</span>
+                <span class="status-badge ${statusClass}">${ride.status === 'searching' ? 'Waiting' : ride.status}</span>
+                ${ride.pooling ? '<span class="status-badge" style="background-color: var(--blue-100); color: var(--blue-800);">Pool</span>' : ''}
+              </div>
+              <div class="route-visualization">
+                <div class="route-line">
+                  <div class="dot-start"></div>
+                  <div class="line"></div>
+                  <div class="dot-end"></div>
+                </div>
+                <div class="route-places">
+                  <p>${ride.origin}</p>
+                  <p>${ride.destination}</p>
+                </div>
+              </div>
+            </div>
+            <div class="ride-price-col">
+              <span class="price">₹${ride.fare.total}</span>
+              ${ride.status === 'completed' ? `<span style="font-size: 0.75rem; font-weight: 700; color: ${ride.paymentStatus==='paid'?'var(--green-600)':'var(--red-600)'};">${ride.paymentStatus==='paid' ? '✓ Paid' : 'Pending Payment'}</span>` : ''}
+              <span class="co2-saved">
+                <i data-lucide="leaf" style="width: 14px; height: 14px;"></i> ${ride.co2Saved} CO₂
+              </span>
+            </div>
+            <a href="ride.html?id=${ride._id}" class="track-btn">
+              Details <i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i>
+            </a>
+          `;
+          ridesContainer.appendChild(card);
+        });
+        lucide.createIcons();
+      } catch (err) {
+        ridesContainer.innerHTML = `
+          <div class="empty-state">
+            <i data-lucide="wifi-off" style="width: 48px; height: 48px;"></i>
+            <h3>Could not load rides</h3>
+            <p>Please check your connection and try again.</p>
+          </div>
+        `;
+        totalCo2El.textContent = 'Total CO₂ Saved: --';
+        lucide.createIcons();
+      }
+    })();
+  </script>
+</body>
+</html>

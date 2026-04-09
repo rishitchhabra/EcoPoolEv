@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoPool EV - Ride Details</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    .ride-layout { display: grid; grid-template-columns: 1fr; gap: 2rem; padding-bottom: 2rem; }
+    @media (min-width: 1024px) { .ride-layout { grid-template-columns: 2fr 1fr; } }
+    
+    .map-container { border-radius: 1.5rem; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid var(--emerald-100); position: relative; height: 500px; margin-bottom: 1.5rem; }
+    #rideMap { width: 100%; height: 100%; z-index: 1; }
+    
+    .map-overlay { position: absolute; bottom: 1.5rem; left: 1.5rem; background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); padding: 1rem; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border: 1px solid var(--gray-100); max-width: 20rem; z-index: 400; }
+    .map-overlay-link { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; transition: transform 0.2s; }
+    .map-overlay-link:hover { transform: scale(1.02); }
+    .overlay-icon-wrapper { background-color: var(--emerald-100); padding: 0.5rem; border-radius: 0.5rem; color: var(--emerald-700); }
+    .overlay-text p:first-child { font-weight: 700; color: var(--gray-900); }
+    .overlay-text p:last-child { font-size: 0.75rem; color: var(--gray-500); }
+    .map-overlay-stats { display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem; padding-top: 0.5rem; border-top: 1px solid var(--gray-100); gap: 1rem; }
+    
+    .access-box { background-color: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); border: 1px solid var(--gray-100); }
+    .access-box h3 { font-weight: 700; font-size: 1.125rem; color: var(--gray-900); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    .access-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+    @media (min-width: 640px) { .access-grid { grid-template-columns: 1fr 1fr; } }
+    .access-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background-color: var(--gray-50); border-radius: 0.5rem; }
+    .access-item-icon { background-color: white; padding: 0.5rem; border-radius: 9999px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); color: var(--emerald-600); }
+
+    .panel { background-color: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); border: 1px solid var(--gray-100); margin-bottom: 1.5rem; }
+    .driver-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+    .avatar { width: 4rem; height: 4rem; background-color: var(--gray-200); border-radius: 9999px; overflow: hidden; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .rating { display: flex; align-items: center; gap: 0.25rem; color: var(--yellow-500); font-size: 0.875rem; }
+    .rating span.score { font-weight: 500; color: var(--gray-700); }
+    .rating span.count { color: var(--gray-400); }
+    .vehicle-info { display: flex; justify-content: space-between; align-items: center; background-color: var(--gray-50); padding: 1rem; border-radius: 0.75rem; margin-bottom: 1rem; }
+    .vehicle-info p.label { font-size: 0.75rem; color: var(--gray-500); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
+    .vehicle-info p.val { font-weight: 700; color: var(--emerald-900); }
+    .plate-val { font-family: monospace; color: var(--gray-700); background-color: white; padding: 0.125rem 0.5rem; border-radius: 0.25rem; border: 1px solid var(--gray-200); }
+    .btn-group { display: flex; gap: 0.75rem; }
+    .btn-contact { flex: 1; padding: 0.625rem; background-color: var(--emerald-600); color: white; border-radius: 0.5rem; font-weight: 500; transition: background-color 0.2s; text-align: center; }
+    .btn-contact:hover { background-color: var(--emerald-700); }
+    .btn-icon { padding: 0.625rem; background-color: var(--gray-100); color: var(--gray-700); border-radius: 0.5rem; transition: background-color 0.2s; display: flex; align-items: center; justify-content: center; }
+    .btn-icon:hover { background-color: var(--gray-200); }
+
+    .timeline { position: relative; display: flex; flex-direction: column; gap: 1rem; }
+    .timeline::before { content: ''; position: absolute; left: 11px; top: 1rem; bottom: 1rem; width: 2px; background-color: var(--gray-200); }
+    .t-item { position: relative; display: flex; gap: 1rem; z-index: 10; }
+    .t-dot { width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 4px solid white; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); flex-shrink: 0; }
+    .t-dot.em { background-color: var(--emerald-500); }
+    .t-dot.gray { background-color: var(--gray-200); }
+    .t-dot.red { background-color: var(--red-500); }
+    .t-content p:first-child { font-size: 0.875rem; color: var(--gray-500); }
+    .t-content p:last-child { font-weight: 700; color: var(--gray-900); }
+    .pooling-badge { background-color: var(--blue-50); color: var(--blue-800); font-size: 0.75rem; padding: 0.125rem 0.5rem; border-radius: 9999px; display: inline-block; margin-bottom: 0.25rem; }
+    
+    .billing { border-top: 1px solid var(--gray-100); margin-top: 1.5rem; padding-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .billing-row { display: flex; justify-content: space-between; align-items: center; }
+    .billing-row.eco { color: var(--emerald-600); }
+    .billing-row.total { font-size: 1.125rem; font-weight: 700; padding-top: 0.5rem; }
+    .btn-pay { width: 100%; margin-top: 1rem; padding: 0.75rem; background-color: var(--gray-900); color: white; border-radius: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background-color 0.2s; }
+    .btn-pay:hover { background-color: black; }
+    .btn-pay:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-pay.paid { background-color: var(--green-700); }
+
+    .loading-state { text-align: center; padding: 4rem; color: var(--gray-400); }
+    .distance-badge { display: inline-flex; align-items: center; gap: 0.25rem; background-color: var(--emerald-50); color: var(--emerald-800); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="brand group">
+        <div class="brand-icon-wrapper group-hover">
+          <i data-lucide="leaf" style="width:24px; height:24px; stroke-width: 2.5px;"></i>
+        </div>
+        <span>EcoPool EV</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">Book a Ride</a>
+        <a href="history.html" class="nav-link">My Rides</a>
+        <a href="accessibility.html" class="nav-link">Accessibility</a>
+        <a href="login.html" class="nav-login-btn">
+          <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+          Login
+        </a>
+      </div>
+      <button class="mobile-menu-btn">
+        <i data-lucide="menu" style="width: 28px; height: 28px;"></i>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container" id="rideContainer">
+      <div class="loading-state" id="loadingState">
+        <i data-lucide="loader-circle" class="animate-spin" style="width: 40px; height: 40px;"></i>
+        <p style="margin-top: 1rem;">Loading ride details...</p>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 EcoPool EV. Sustainable & Accessible Mobility.</p>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    (async () => {
+      const user = await Auth.requireLogin();
+      if (!user) return;
+
+      const container = document.getElementById('rideContainer');
+      const params = new URLSearchParams(window.location.search);
+      const rideId = params.get('id');
+
+      if (!rideId) {
+        container.innerHTML = '<div class="loading-state"><h3>No ride ID provided</h3><p><a href="history.html" style="color: var(--emerald-600); font-weight: 600;">View your rides →</a></p></div>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/rides/${rideId}`);
+        if (!res.ok) throw new Error('Ride not found');
+        const data = await res.json();
+        const ride = data.ride;
+
+        // Format time
+        let formattedTime = ride.time;
+        if (ride.time && ride.time.includes(':')) {
+          const [h, m] = ride.time.split(':');
+          const hour = parseInt(h);
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          const displayHour = hour % 12 || 12;
+          formattedTime = `${displayHour}:${m} ${ampm}`;
+        }
+
+        // Calculate arrival time
+        const etaMins = parseInt(ride.eta) || 14;
+        const [th, tm] = ride.time.split(':').map(Number);
+        const arrivalH = th + Math.floor((tm + etaMins) / 60);
+        const arrivalM = (tm + etaMins) % 60;
+        const arrivalAmpm = arrivalH >= 12 ? 'PM' : 'AM';
+        const arrivalDisplay = `${arrivalH % 12 || 12}:${String(arrivalM).padStart(2, '0')} ${arrivalAmpm}`;
+
+        // Pooling HTML
+        let poolingHTML = '';
+        if (ride.poolingPartners && ride.poolingPartners.length > 0) {
+          const names = ride.poolingPartners.map(p => p.name).join(' & ');
+          poolingHTML = `
+            <div class="t-item"><div class="t-dot gray"></div><div class="t-content">
+              <div class="pooling-badge">Pooling</div>
+              <p>Pick up ${names}</p>
+              <p style="font-size: 0.75rem; color: var(--emerald-600); font-weight: 500">+5 mins (Optimized)</p>
+            </div></div>`;
+        }
+
+        // Access HTML
+        let accessHTML = '';
+        if (ride.accessibilityOptions && ride.accessibilityOptions.length > 0) {
+          const items = ride.accessibilityOptions.map(opt => `
+            <div class="access-item"><div class="access-item-icon"><i data-lucide="check-circle" style="width: 20px; height: 20px;"></i></div>
+            <span style="font-weight: 500; color: var(--gray-700)">${opt}</span></div>
+          `).join('');
+          accessHTML = `<div class="access-box"><h3><i data-lucide="shield" style="color: var(--emerald-600);"></i> Accessibility Features Verified</h3><div class="access-grid">${items}</div></div>`;
+        }
+
+        const isWaiting = ride.status === 'searching';
+        const isPaid = ride.paymentStatus === 'paid';
+        const isCompleted = ride.status === 'completed';
+
+        let driverHTML = '';
+        if (isWaiting) {
+          driverHTML = `
+            <div class="panel" style="text-align: center; padding: 3rem 1.5rem;">
+              <i data-lucide="loader-circle" class="animate-spin" style="width: 48px; height: 48px; color: var(--emerald-500); margin: 0 auto 1rem;"></i>
+              <h3 style="font-weight: 700; font-size: 1.125rem; color: var(--gray-900);">Finding your driver...</h3>
+              <p style="color: var(--gray-500); margin-top: 0.5rem;">We are searching for the nearest EcoPool driver.</p>
+            </div>
+          `;
+        } else {
+          driverHTML = `
+            <div class="panel">
+              <div class="driver-header">
+                <div class="avatar"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${ride.driver?.avatar || 'Felix'}" alt="Driver"></div>
+                <div>
+                  <h3 style="font-weight: 700; font-size: 1.125rem; color: var(--gray-900);">${ride.driver?.name || 'Driver'}</h3>
+                  <div class="rating"><i data-lucide="star" style="width: 14px; height: 14px; fill: currentColor;"></i><span class="score">${ride.driver?.rating || 5.0}</span><span class="count">(${ride.driver?.totalRides || 0} rides)</span></div>
+                  <p style="font-size: 0.75rem; color: var(--gray-500); margin-top: 0.25rem;">Certified Accessibility Assistant</p>
+                </div>
+              </div>
+              <div class="vehicle-info">
+                <div><p class="label">Vehicle</p><p class="val">${ride.driver?.vehicle || 'EV'}</p></div>
+                <div style="text-align: right;"><p class="label">Plate</p><p class="plate-val">${ride.driver?.plate || '---'}</p></div>
+              </div>
+              <div class="btn-group"><button class="btn-contact">Contact Driver</button><button class="btn-icon"><i data-lucide="share-2" style="width: 20px; height: 20px;"></i></button></div>
+            </div>
+          `;
+        }
+
+        container.innerHTML = `
+          <div class="ride-layout">
+            <div class="col-left">
+              <div class="map-container"><div id="rideMap"></div>
+                <div class="map-overlay">
+                  <a href="track.html?id=${ride._id}" class="map-overlay-link">
+                    <div class="overlay-icon-wrapper"><i data-lucide="navigation" style="width: 20px; height: 20px;"></i></div>
+                    <div class="overlay-text"><p>Tap for Live Tracking</p><p>Shortest route via OSRM</p></div>
+                  </a>
+                  <div class="map-overlay-stats">
+                    <span style="color: var(--gray-600)">ETA: <span style="font-weight: 700; color: var(--gray-900)">${ride.eta}</span></span>
+                    <span style="color: var(--emerald-600); font-weight: 500;">${ride.distance || '--'}</span>
+                    <span style="color: var(--emerald-600); font-weight: 500;">${ride.co2Saved} CO₂</span>
+                  </div>
+                </div>
+              </div>
+              ${accessHTML}
+            </div>
+            <div class="col-right">
+              ${driverHTML}
+              <div class="panel">
+                <h3 style="font-weight: 700; font-size: 1.125rem; color: var(--gray-900); margin-bottom: 1rem;">Trip Summary</h3>
+                <div class="timeline">
+                  <div class="t-item"><div class="t-dot em"></div><div class="t-content"><p>${formattedTime}</p><p>${ride.origin}</p></div></div>
+                  ${poolingHTML}
+                  <div class="t-item"><div class="t-dot red"></div><div class="t-content"><p>${arrivalDisplay} (Est)</p><p>${ride.destination}</p></div></div>
+                </div>
+                <div class="billing">
+                  <div class="billing-row"><span style="color: var(--gray-600)">Base Fare</span><span style="font-weight: 500;">₹${ride.fare.base}</span></div>
+                  <div class="billing-row eco"><span style="display: flex; align-items: center; gap: 0.25rem;"><i data-lucide="leaf" style="width: 14px; height: 14px;"></i> Eco Discount</span><span style="font-weight: 500;">-₹${ride.fare.ecoDiscount}</span></div>
+                  ${ride.fare.poolDiscount > 0 ? `<div class="billing-row eco" style="color: var(--blue-600);"><span style="display: flex; align-items: center; gap: 0.25rem;"><i data-lucide="users" style="width: 14px; height: 14px;"></i> Pool Discount</span><span style="font-weight: 500;">-₹${ride.fare.poolDiscount}</span></div>` : ''}
+                  <div class="billing-row"><span style="color: var(--gray-600)">Distance</span><span style="font-weight: 500;">${ride.distance || '--'}</span></div>
+                  <div class="billing-row total"><span>Total</span><span>₹${ride.fare.total}</span></div>
+                </div>
+                <button class="btn-pay ${isPaid ? 'paid' : ''}" id="payBtn" ${isPaid || !isCompleted ? 'disabled' : ''}>
+                  <i data-lucide="credit-card" style="width: 18px; height: 18px;"></i>
+                  <span id="payText">${isPaid ? '✓ Paid' : (!isCompleted ? 'Pay After Ride' : 'Pay Now')}</span>
+                </button>
+              </div>
+            </div>
+          </div>`;
+
+        lucide.createIcons();
+
+        // ===== RENDER LEAFLET MAP WITH OSRM ROUTE =====
+        const hasCoords = ride.originCoords && ride.originCoords.lat && ride.destinationCoords && ride.destinationCoords.lat;
+        const map = L.map('rideMap');
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+
+        if (hasCoords) {
+          // Fetch OSRM shortest route
+          try {
+            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${ride.originCoords.lng},${ride.originCoords.lat};${ride.destinationCoords.lng},${ride.destinationCoords.lat}?overview=full&geometries=geojson`;
+            const routeRes = await fetch(osrmUrl);
+            const routeData = await routeRes.json();
+
+            if (routeData.code === 'Ok' && routeData.routes.length > 0) {
+              const coords = routeData.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+              
+              // Route polyline
+              L.polyline(coords, { color: '#059669', weight: 6, opacity: 0.85 }).addTo(map);
+
+              // Start marker
+              const startIcon = L.divIcon({ className: '', html: '<div style="width:20px;height:20px;background:#10b981;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>', iconSize: [20, 20], iconAnchor: [10, 10] });
+              L.marker([ride.originCoords.lat, ride.originCoords.lng], { icon: startIcon }).addTo(map).bindPopup(`<b>Start:</b> ${ride.origin}`);
+
+              // End marker
+              const endIcon = L.divIcon({ className: '', html: '<div style="width:20px;height:20px;background:#ef4444;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>', iconSize: [20, 20], iconAnchor: [10, 10] });
+              L.marker([ride.destinationCoords.lat, ride.destinationCoords.lng], { icon: endIcon }).addTo(map).bindPopup(`<b>Destination:</b> ${ride.destination}`);
+
+              map.fitBounds(L.latLngBounds(coords), { padding: [40, 40] });
+            }
+          } catch (e) {
+            console.log('Map route error:', e);
+            map.setView([ride.originCoords.lat, ride.originCoords.lng], 13);
+          }
+        } else {
+          map.setView([28.6139, 77.209], 12); // Default: Delhi
+        }
+
+        // Wire pay button
+        const payBtn = document.getElementById('payBtn');
+        if (payBtn && !isPaid && isCompleted) {
+          payBtn.addEventListener('click', async () => {
+            payBtn.disabled = true;
+            document.getElementById('payText').textContent = 'Processing...';
+            try {
+              const payRes = await fetch(`/api/rides/${ride._id}/pay`, { method: 'PATCH' });
+              if (payRes.ok) { payBtn.classList.add('paid'); document.getElementById('payText').textContent = '✓ Paid'; }
+              else { document.getElementById('payText').textContent = 'Failed'; payBtn.disabled = false; }
+            } catch { document.getElementById('payText').textContent = 'Error'; payBtn.disabled = false; }
+          });
+        }
+
+      } catch (err) {
+        container.innerHTML = `<div class="loading-state"><i data-lucide="alert-circle" style="width: 48px; height: 48px; color: var(--red-500);"></i><h3 style="margin-top: 1rem; color: var(--gray-700);">Ride not found</h3><a href="history.html" style="color: var(--emerald-600); font-weight: 600; margin-top: 1rem; display: inline-block;">← Back to My Rides</a></div>`;
+        lucide.createIcons();
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoPool EV - Login</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .login-wrapper { padding: 2.5rem 1rem; flex-grow: 1; display: flex; align-items: flex-start; justify-content: center; }
+    .login-card { background-color: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border: 1px solid var(--gray-100); width: 100%; max-width: 28rem; }
+    
+    .login-header { text-align: center; margin-bottom: 2rem; }
+    .login-header h1 { font-size: 1.5rem; font-weight: 700; color: var(--gray-900); margin-bottom: 0.25rem; }
+    .login-header p { color: var(--gray-500); }
+
+    .login-form { display: flex; flex-direction: column; gap: 1.5rem; }
+    .form-group label { display: block; font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: 0.5rem; }
+    
+    .btn-login { width: 100%; background-color: var(--emerald-600); color: white; font-weight: 700; padding: 0.75rem; border-radius: 0.5rem; transition: background-color 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+    .btn-login:hover { background-color: var(--emerald-700); }
+    .btn-login:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    .login-footer { margin-top: 1.5rem; text-align: center; font-size: 0.875rem; color: var(--gray-600); }
+    .login-footer a { color: var(--emerald-600); font-weight: 600; }
+    .login-footer a:hover { text-decoration: underline; }
+
+    .error-msg {
+      background-color: var(--red-50);
+      color: var(--red-700);
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border: 1px solid var(--red-100);
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .error-msg.show { display: flex; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="brand group">
+        <div class="brand-icon-wrapper group-hover">
+          <i data-lucide="leaf" style="width:24px; height:24px; stroke-width: 2.5px;"></i>
+        </div>
+        <span>EcoPool EV</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">Book a Ride</a>
+        <a href="history.html" class="nav-link">My Rides</a>
+        <a href="accessibility.html" class="nav-link">Accessibility</a>
+        <a href="login.html" class="nav-login-btn hover-bg-600">
+          <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+          Login
+        </a>
+      </div>
+      <button class="mobile-menu-btn">
+        <i data-lucide="menu" style="width: 28px; height: 28px;"></i>
+      </button>
+    </div>
+  </nav>
+
+  <main class="login-wrapper">
+    <div class="login-card">
+      <div class="login-header">
+        <h1>Welcome Back</h1>
+        <p>Sign in to your EcoPool account</p>
+      </div>
+
+      <div class="error-msg" id="errorMsg">
+        <i data-lucide="alert-circle" style="width: 16px; height: 16px; flex-shrink: 0;"></i>
+        <span id="errorText"></span>
+      </div>
+
+      <form class="login-form" id="loginForm">
+        <div class="form-group">
+          <label>User ID</label>
+          <div class="input-group">
+            <i data-lucide="user" class="input-icon" style="width: 18px; height: 18px;"></i>
+            <input type="text" class="input-field" id="userIdInput" placeholder="e.g. rishit" required autocomplete="username">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>Password</label>
+          <div class="input-group">
+            <i data-lucide="lock" class="input-icon" style="width: 18px; height: 18px;"></i>
+            <input type="password" class="input-field" id="passwordInput" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+        </div>
+
+        <button type="submit" class="btn-login" id="loginBtn">
+          <span id="loginText">Sign In</span>
+        </button>
+      </form>
+
+      <div class="login-footer">
+        Don't have an account? <a href="register.html">Sign up</a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 EcoPool EV. Sustainable & Accessible Mobility.</p>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // If already logged in, redirect based on role
+    Auth.getUser().then(user => {
+      if (user) window.location.href = user.role === 'driver' ? '/driver.html' : '/index.html';
+    });
+
+    const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginText = document.getElementById('loginText');
+    const errorMsg = document.getElementById('errorMsg');
+    const errorText = document.getElementById('errorText');
+
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorMsg.classList.add('show');
+      lucide.createIcons();
+    }
+
+    function hideError() {
+      errorMsg.classList.remove('show');
+    }
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const userId = document.getElementById('userIdInput').value.trim();
+      const password = document.getElementById('passwordInput').value;
+
+      if (!userId || !password) {
+        showError('Please enter both User ID and password.');
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginText.textContent = 'Signing in...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.error || 'Login failed.');
+          loginBtn.disabled = false;
+          loginText.textContent = 'Sign In';
+          return;
+        }
+
+        // Success — redirect based on role
+        loginText.textContent = 'Welcome!';
+        setTimeout(() => {
+          window.location.href = data.user.role === 'driver' ? '/driver.html' : '/index.html';
+        }, 500);
+      } catch (err) {
+        showError('Network error. Is the server running?');
+        loginBtn.disabled = false;
+        loginText.textContent = 'Sign In';
+      }
+    });
+  </script>
+</body>
+</html>

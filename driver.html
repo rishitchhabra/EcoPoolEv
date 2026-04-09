@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoPool EV - Driver Portal</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .driver-container {
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .driver-header {
+      background: linear-gradient(135deg, var(--emerald-900), var(--emerald-700));
+      border-radius: 1.5rem;
+      padding: 2rem;
+      color: white;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .driver-header h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .driver-stats {
+      display: flex;
+      gap: 2rem;
+    }
+
+    .driver-stat {
+      text-align: center;
+    }
+
+    .driver-stat .val {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .driver-stat .lbl {
+      font-size: 0.75rem;
+      color: var(--emerald-300);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      background-color: var(--gray-100);
+      border-radius: 0.75rem;
+      padding: 0.25rem;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      text-align: center;
+      transition: all 0.2s;
+      color: var(--gray-600);
+    }
+
+    .tab-btn.active {
+      background-color: white;
+      color: var(--emerald-700);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .tab-btn:hover:not(.active) {
+      color: var(--gray-900);
+    }
+
+    .tab-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--red-500);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 700;
+      min-width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 9999px;
+      margin-left: 0.5rem;
+      padding: 0 0.25rem;
+    }
+
+    .ride-card {
+      background: white;
+      border-radius: 1rem;
+      border: 1px solid var(--gray-100);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      transition: all 0.2s;
+    }
+
+    .ride-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .ride-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .ride-card-rider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .rider-avatar {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      background: var(--emerald-100);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--emerald-700);
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .ride-card-badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-searching {
+      background-color: var(--yellow-100);
+      color: var(--yellow-800);
+    }
+
+    .badge-confirmed {
+      background-color: var(--emerald-100);
+      color: var(--emerald-800);
+    }
+
+    .badge-completed {
+      background-color: var(--blue-50);
+      color: var(--blue-800);
+    }
+
+    .badge-paid {
+      background-color: var(--green-100);
+      color: var(--green-800);
+    }
+
+    .ride-card-route {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .route-dots {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      padding-top: 0.25rem;
+    }
+
+    .route-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .route-dot.start {
+      background: var(--emerald-500);
+    }
+
+    .route-dot.end {
+      background: var(--red-500);
+    }
+
+    .route-line {
+      width: 2px;
+      height: 1.5rem;
+      background: var(--gray-200);
+    }
+
+    .route-places {
+      flex: 1;
+    }
+
+    .route-places p {
+      font-weight: 500;
+      color: var(--gray-900);
+    }
+
+    .route-places p+p {
+      margin-top: 0.75rem;
+    }
+
+    .ride-card-meta {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      font-size: 0.875rem;
+      color: var(--gray-500);
+      margin-bottom: 1rem;
+    }
+
+    .ride-card-meta span {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .meta-pooling {
+      color: var(--blue-600);
+      font-weight: 500;
+    }
+
+    .ride-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 1rem;
+      border-top: 1px solid var(--gray-100);
+    }
+
+    .fare-display {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+
+    .fare-display .currency {
+      color: var(--emerald-600);
+    }
+
+    .btn-accept {
+      padding: 0.625rem 1.5rem;
+      background-color: var(--emerald-600);
+      color: white;
+      border-radius: 0.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .btn-accept:hover {
+      background-color: var(--emerald-700);
+      transform: scale(1.02);
+    }
+
+    .btn-accept:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-complete {
+      padding: 0.625rem 1.5rem;
+      background-color: var(--blue-600);
+      color: white;
+      border-radius: 0.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .btn-complete:hover {
+      background-color: var(--blue-700);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--gray-400);
+    }
+
+    .empty-state i {
+      margin-bottom: 1rem;
+    }
+
+    .empty-state p {
+      font-size: 1.125rem;
+    }
+
+    #availableRides,
+    #myDrives {
+      display: none;
+    }
+
+    #availableRides.active,
+    #myDrives.active {
+      display: block;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .ride-card {
+      animation: slideIn 0.3s ease;
+    }
+
+    /* Accessibility Settings Styles */
+    .access-section {
+      margin-bottom: 2rem;
+    }
+
+    .access-section h3 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 1rem;
+    }
+
+    .access-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .access-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .access-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border: 1px solid var(--gray-200);
+      border-radius: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: white;
+      user-select: none;
+    }
+
+    .access-label:hover {
+      border-color: var(--emerald-300);
+    }
+
+    .access-label span {
+      font-weight: 600;
+      color: var(--gray-700);
+      font-size: 0.95rem;
+    }
+
+    .access-radio-circle {
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 50%;
+      border: 2px solid var(--gray-300);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .access-label input:checked~.access-radio-circle {
+      border-color: var(--emerald-500);
+      background-color: var(--emerald-500);
+    }
+
+    .access-label input:checked~.access-radio-circle::after {
+      content: '';
+      display: block;
+      width: 0.375rem;
+      height: 0.625rem;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+      margin-top: -2px;
+    }
+
+    .access-label:has(input:checked) {
+      border-color: var(--emerald-500);
+      background-color: #ecfdf5;
+    }
+
+    .access-label:has(input:checked) span {
+      color: var(--emerald-800);
+    }
+
+    .access-label input {
+      display: none;
+    }
+
+    .floating-save-btn {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #0f172a;
+      color: white;
+      padding: 0.75rem 2rem;
+      border-radius: 2rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s;
+      z-index: 50;
+    }
+
+    .floating-save-btn:hover {
+      background-color: black;
+      transform: translateX(-50%) translateY(-2px);
+    }
+
+    .floating-save-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: translateX(-50%);
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="driver.html" class="brand group">
+        <div class="brand-icon-wrapper group-hover">
+          <i data-lucide="steering-wheel" style="width:24px; height:24px; stroke-width: 2.5px;"></i>
+        </div>
+        <span>EcoPool <strong>Driver</strong></span>
+      </a>
+      <div class="nav-links">
+        <a href="driver.html" class="nav-link" style="font-weight: 600; color: var(--emerald-700);">Dashboard</a>
+        <a href="#" class="nav-login-btn" id="logoutBtn">
+          <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
+          Logout
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <div class="driver-container">
+      <div class="driver-header">
+        <div>
+          <h1><i data-lucide="car" style="width: 28px; height: 28px;"></i> <span id="driverGreeting">Driver
+              Portal</span></h1>
+          <p style="color: var(--emerald-200); margin-top: 0.5rem;" id="vehicleInfo">Loading...</p>
+        </div>
+        <div class="driver-stats">
+          <div class="driver-stat">
+            <div class="val" id="statRating">--</div>
+            <div class="lbl">Rating</div>
+          </div>
+          <div class="driver-stat">
+            <div class="val" id="statRides">--</div>
+            <div class="lbl">Rides</div>
+          </div>
+          <div class="driver-stat">
+            <div class="val" id="statEarnings">--</div>
+            <div class="lbl">Today</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" id="tabAvailable">Available Rides <span class="tab-badge" id="availableCount"
+            style="display:none;">0</span></button>
+        <button class="tab-btn" id="tabMyDrives">My Drives</button>
+        <button class="tab-btn" id="tabSettings">Settings</button>
+      </div>
+
+      <div id="availableRides" class="active"></div>
+      <div id="myDrives"></div>
+      <div id="settingsTab" style="display: none;">
+        <p style="color: var(--gray-600); margin-bottom: 2rem; font-size: 0.9rem;">Select the accessibility features
+          your vehicle currently offers. You will only receive ride requests that match your capabilities.</p>
+
+        <form id="accessForm">
+          <div class="access-section">
+            <h3>Mobility Requirements</h3>
+            <div class="access-grid">
+              <label class="access-label">
+                <input type="checkbox" value="Wheelchair Ramp / Lift" class="access-chk">
+                <span>Wheelchair Ramp / Lift</span>
+                <div class="access-radio-circle"></div>
+              </label>
+              <label class="access-label">
+                <input type="checkbox" value="Low Floor Entry" class="access-chk">
+                <span>Low Floor Entry</span>
+                <div class="access-radio-circle"></div>
+              </label>
+              <label class="access-label">
+                <input type="checkbox" value="Extra Legroom" class="access-chk">
+                <span>Extra Legroom</span>
+                <div class="access-radio-circle"></div>
+              </label>
+              <label class="access-label">
+                <input type="checkbox" value="Mobility Aid Storage" class="access-chk">
+                <span>Mobility Aid Storage</span>
+                <div class="access-radio-circle"></div>
+              </label>
+            </div>
+          </div>
+
+          <div class="access-section">
+            <h3>Driver Assistance</h3>
+            <div class="access-grid">
+              <label class="access-label">
+                <input type="checkbox" value="Boarding Assistance" class="access-chk">
+                <span>Boarding Assistance</span>
+                <div class="access-radio-circle"></div>
+              </label>
+              <label class="access-label">
+                <input type="checkbox" value="Door-to-Door Escort" class="access-chk">
+                <span>Door-to-Door Escort</span>
+                <div class="access-radio-circle"></div>
+              </label>
+              <label class="access-label">
+                <input type="checkbox" value="Luggage/Equipment Help" class="access-chk">
+                <span>Luggage/Equipment Help</span>
+                <div class="access-radio-circle"></div>
+              </label>
+            </div>
+          </div>
+
+          <div class="access-section">
+            <h3>Sensory & Environment</h3>
+            <div class="access-grid">
+              <label class="access-label">
+                <input type="checkbox" value="Quiet Ride (No Music)" class="access-chk">
+                <span>Quiet Ride (No Music)</span>
+                <div class="access-radio-circle"></div>
+              </label>
+              <label class="access-label">
+                <input type="checkbox" value="Scent-Free Vehicle" class="access-chk">
+                <span>Scent-Free Vehicle</span>
+                <div class="access-radio-circle"></div>
+              </label>
+              <label class="access-label">
+                <input type="checkbox" value="Screen Reader Compatible App" class="access-chk">
+                <span>Screen Reader Compatible App</span>
+                <div class="access-radio-circle"></div>
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" class="floating-save-btn" id="saveAccessBtn">
+            <i data-lucide="save" style="width: 18px; height: 18px;"></i> Save Preferences
+          </button>
+          <div id="accessMsg" style="text-align: center; font-weight: 600; padding: 1rem;"></div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    let currentDriver = null;
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+      e.preventDefault();
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/login.html';
+    });
+
+    // Tab switching
+    const tabAvailable = document.getElementById('tabAvailable');
+    const tabMyDrives = document.getElementById('tabMyDrives');
+    const tabSettings = document.getElementById('tabSettings');
+    const availableDiv = document.getElementById('availableRides');
+    const myDrivesDiv = document.getElementById('myDrives');
+    const settingsDiv = document.getElementById('settingsTab');
+
+    function resetTabs() {
+      [tabAvailable, tabMyDrives, tabSettings].forEach(t => t.classList.remove('active'));
+      [availableDiv, myDrivesDiv, settingsDiv].forEach(d => { d.classList.remove('active'); d.style.display = 'none'; });
+    }
+
+    tabAvailable.addEventListener('click', () => {
+      resetTabs();
+      tabAvailable.classList.add('active'); availableDiv.classList.add('active'); availableDiv.style.display = 'block';
+      loadAvailableRides();
+    });
+    tabMyDrives.addEventListener('click', () => {
+      resetTabs();
+      tabMyDrives.classList.add('active'); myDrivesDiv.classList.add('active'); myDrivesDiv.style.display = 'block';
+      loadMyDrives();
+    });
+    tabSettings.addEventListener('click', () => {
+      resetTabs();
+      tabSettings.classList.add('active'); settingsDiv.classList.add('active'); settingsDiv.style.display = 'block';
+    });
+
+    function formatTime(time) {
+      if (!time || !time.includes(':')) return time;
+      const [h, m] = time.split(':');
+      const hour = parseInt(h);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      return `${hour % 12 || 12}:${m} ${ampm}`;
+    }
+
+    function renderRideCard(ride, type) {
+      const badges = {
+        searching: '<span class="ride-card-badge badge-searching">Waiting for Driver</span>',
+        confirmed: '<span class="ride-card-badge badge-confirmed">Confirmed</span>',
+        completed: '<span class="ride-card-badge badge-completed">Completed</span>'
+      };
+      const payBadge = ride.paymentStatus === 'paid' ? ' <span class="ride-card-badge badge-paid">₹ Paid</span>' : '';
+      const initials = (ride.riderName || 'U').split(' ').map(w => w[0]).join('').substring(0, 2);
+
+      let actionBtn = '';
+      if (type === 'available') {
+        actionBtn = `<button class="btn-accept" onclick="acceptRide('${ride._id}', this)"><i data-lucide="check-circle" style="width:18px;height:18px;"></i> Accept Ride</button>`;
+      } else if (ride.status === 'confirmed') {
+        actionBtn = `<button class="btn-complete" onclick="completeRide('${ride._id}', this)"><i data-lucide="flag" style="width:18px;height:18px;"></i> Complete Ride</button>`;
+      }
+
+      return `
+        <div class="ride-card" id="ride-${ride._id}">
+          <div class="ride-card-header">
+            <div class="ride-card-rider">
+              <div class="rider-avatar">${initials}</div>
+              <div>
+                <p style="font-weight: 600; color: var(--gray-900);">${ride.riderName || 'Rider'}</p>
+                <p style="font-size: 0.75rem; color: var(--gray-500);">${ride.date} at ${formatTime(ride.time)}</p>
+              </div>
+            </div>
+            <div>${badges[ride.status] || ''}${payBadge}</div>
+          </div>
+          <div class="ride-card-route">
+            <div class="route-dots"><div class="route-dot start"></div><div class="route-line"></div><div class="route-dot end"></div></div>
+            <div class="route-places"><p>${ride.origin}</p><p>${ride.destination}</p></div>
+          </div>
+          <div class="ride-card-meta">
+            <span><i data-lucide="route" style="width:14px;height:14px;"></i> ${ride.distance || '--'}</span>
+            <span><i data-lucide="clock" style="width:14px;height:14px;"></i> ${ride.eta}</span>
+            ${ride.pooling ? '<span class="meta-pooling"><i data-lucide="users" style="width:14px;height:14px;"></i> Pool Ride</span>' : ''}
+            ${ride.accessibilityOptions && ride.accessibilityOptions.length > 0 ? `<span style="color: var(--blue-600);"><i data-lucide="shield" style="width:14px;height:14px;"></i> Accessibility</span>` : ''}
+          </div>
+          <div class="ride-card-footer">
+            <div class="fare-display"><span class="currency">₹</span>${ride.fare.total}</div>
+            ${actionBtn}
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadAvailableRides() {
+      try {
+        const res = await fetch('/api/rides/available');
+        const data = await res.json();
+        const rides = data.rides || [];
+        const countBadge = document.getElementById('availableCount');
+
+        if (rides.length > 0) {
+          countBadge.textContent = rides.length;
+          countBadge.style.display = 'inline-flex';
+          availableDiv.innerHTML = rides.map(r => renderRideCard(r, 'available')).join('');
+        } else {
+          countBadge.style.display = 'none';
+          availableDiv.innerHTML = `<div class="empty-state"><i data-lucide="coffee" style="width:48px;height:48px;"></i><p>No rides available right now</p><p style="font-size: 0.875rem; margin-top: 0.5rem;">New ride requests will appear here automatically</p></div>`;
+        }
+        lucide.createIcons();
+      } catch (err) {
+        availableDiv.innerHTML = '<div class="empty-state"><p>Error loading rides</p></div>';
+      }
+    }
+
+    async function loadMyDrives() {
+      try {
+        const res = await fetch('/api/rides/my-drives');
+        const data = await res.json();
+        const rides = data.rides || [];
+
+        // Update dashboard stats automatically based on My Drives
+        const todayStr = new Date().toISOString().split('T')[0];
+        let ridesToday = 0;
+        let earnedToday = 0;
+
+        rides.forEach(ride => {
+          if (ride.date === todayStr) {
+            ridesToday++;
+            if (ride.status === 'completed') {
+              earnedToday += (ride.fare.total || 0); // Include if they made money
+            }
+          }
+        });
+
+        document.getElementById('statRides').textContent = parseInt(currentDriver?.totalDriverRides || 0) + ridesToday;
+        document.getElementById('statEarnings').textContent = '₹' + Math.floor(earnedToday);
+
+        if (rides.length > 0) {
+          myDrivesDiv.innerHTML = rides.map(r => renderRideCard(r, 'my')).join('');
+        } else {
+          myDrivesDiv.innerHTML = `<div class="empty-state"><i data-lucide="car" style="width:48px;height:48px;"></i><p>No drives yet</p><p style="font-size: 0.875rem; margin-top: 0.5rem;">Accept a ride to get started!</p></div>`;
+        }
+        lucide.createIcons();
+      } catch (err) {
+        myDrivesDiv.innerHTML = '<div class="empty-state"><p>Error loading drives</p></div>';
+      }
+    }
+
+    window.acceptRide = async (rideId, btn) => {
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader-circle" class="animate-spin" style="width:18px;height:18px;"></i> Accepting...';
+      lucide.createIcons();
+
+      try {
+        const res = await fetch(`/api/rides/${rideId}/accept`, { method: 'PATCH' });
+        const data = await res.json();
+
+        if (res.ok) {
+          btn.style.backgroundColor = 'var(--green-700)';
+          btn.innerHTML = '✓ Accepted!';
+          setTimeout(() => {
+            loadAvailableRides();
+            loadMyDrives();
+          }, 800);
+        } else {
+          btn.innerHTML = data.error || 'Already taken';
+          btn.style.backgroundColor = 'var(--red-500)';
+          setTimeout(() => loadAvailableRides(), 1500);
+        }
+      } catch {
+        btn.innerHTML = 'Error';
+        btn.disabled = false;
+      }
+    };
+
+    window.completeRide = async (rideId, btn) => {
+      btn.disabled = true;
+      btn.innerHTML = 'Completing...';
+
+      try {
+        const res = await fetch(`/api/rides/${rideId}/complete`, { method: 'PATCH' });
+        if (res.ok) {
+          btn.style.backgroundColor = 'var(--green-700)';
+          btn.innerHTML = '✓ Completed';
+          setTimeout(() => loadMyDrives(), 800);
+        } else {
+          btn.innerHTML = 'Error';
+          btn.disabled = false;
+        }
+      } catch { btn.innerHTML = 'Error'; btn.disabled = false; }
+    };
+
+    // Init
+    (async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (!res.ok) { window.location.href = '/login.html'; return; }
+        const data = await res.json();
+        currentDriver = data.user;
+
+        if (currentDriver.role !== 'driver') {
+          window.location.href = '/index.html';
+          return;
+        }
+
+        document.getElementById('driverGreeting').textContent = `Welcome, ${currentDriver.name}`;
+        document.getElementById('vehicleInfo').textContent = `${currentDriver.vehicle?.type || 'EV'} • ${currentDriver.vehicle?.plate || '--'}`;
+        document.getElementById('statRating').textContent = currentDriver.driverRating?.toFixed(1) || '5.0';
+        document.getElementById('statRides').textContent = currentDriver.totalDriverRides || 0;
+        document.getElementById('statEarnings').textContent = '₹0';
+
+        Auth.updateNavbar(currentDriver);
+
+        // Populate settings checkboxes
+        if (currentDriver.offeredAccessibility) {
+          document.querySelectorAll('.access-chk').forEach(chk => {
+            if (currentDriver.offeredAccessibility.includes(chk.value)) {
+              chk.checked = true;
+            }
+          });
+        }
+
+        // Handle settings save
+        document.getElementById('accessForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const btn = document.getElementById('saveAccessBtn');
+          const msg = document.getElementById('accessMsg');
+          btn.disabled = true;
+          btn.textContent = 'Saving...';
+          msg.textContent = '';
+
+          const features = [];
+          document.querySelectorAll('.access-chk:checked').forEach(c => features.push(c.value));
+
+          try {
+            const upRes = await fetch('/api/auth/accessibility', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ features })
+            });
+            if (upRes.ok) {
+              msg.textContent = 'Settings saved successfully!';
+              msg.style.color = 'var(--emerald-600)';
+            } else {
+              msg.textContent = 'Error saving settings.';
+              msg.style.color = 'var(--red-600)';
+            }
+          } catch (e) {
+            msg.textContent = 'Network error.';
+            msg.style.color = 'var(--red-600)';
+          }
+          btn.disabled = false;
+          btn.textContent = 'Save Features';
+          loadAvailableRides(); // refresh rides based on new limits
+        });
+
+        loadAvailableRides();
+
+        // Auto-refresh available rides every 5 seconds if on available tab
+        setInterval(() => {
+          if (availableDiv.style.display !== 'none') loadAvailableRides();
+        }, 5000);
+      } catch {
+        window.location.href = '/login.html';
+      }
+    })();
+  </script>
+</body>
+
+</html>

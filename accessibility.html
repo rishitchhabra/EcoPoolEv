@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoPool EV - Accessibility Preferences</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .access-container { max-width: 48rem; margin: 0 auto; padding: 2rem 1rem; display: flex; flex-direction: column; gap: 2rem; }
+    .access-header { text-align: center; display: flex; flex-direction: column; gap: 0.5rem; }
+    .access-header h1 { font-size: 1.875rem; font-weight: 700; color: var(--gray-900); }
+    .access-header p { color: var(--gray-600); }
+
+    .pref-section { background-color: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); border: 1px solid var(--gray-100); }
+    .pref-section h3 { font-size: 1.125rem; font-weight: 700; color: var(--gray-900); margin-bottom: 1rem; }
+    
+    .pref-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+    @media (min-width: 640px) { .pref-grid { grid-template-columns: 1fr 1fr; } }
+    
+    .pref-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--gray-200);
+      background-color: white;
+      text-align: left;
+      transition: all 0.2s;
+    }
+    .pref-toggle:hover { border-color: var(--gray-300); }
+    .pref-toggle.active {
+      background-color: var(--emerald-50);
+      border-color: var(--emerald-500);
+      box-shadow: 0 0 0 1px var(--emerald-500);
+    }
+    .pref-label { font-weight: 500; color: var(--gray-700); }
+    .pref-toggle.active .pref-label { color: var(--emerald-900); }
+    
+    .pref-checkbox {
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 9999px;
+      border: 1px solid var(--gray-300);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
+    }
+    .pref-toggle.active .pref-checkbox {
+      background-color: var(--emerald-500);
+      border-color: var(--emerald-500);
+    }
+
+    .save-container { position: sticky; bottom: 1.5rem; display: flex; justify-content: center; z-index: 20; }
+    .save-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 2rem;
+      border-radius: 9999px;
+      font-weight: 700;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s;
+      background-color: var(--gray-900);
+      color: white;
+    }
+    .save-btn:hover { background-color: black; transform: scale(1.05); }
+    .save-btn.saved { background-color: var(--green-700); color: white; }
+    .save-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+
+    .loading-state { text-align: center; padding: 3rem; color: var(--gray-400); }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="brand group">
+        <div class="brand-icon-wrapper group-hover">
+          <i data-lucide="leaf" style="width:24px; height:24px; stroke-width: 2.5px;"></i>
+        </div>
+        <span>EcoPool EV</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">Book a Ride</a>
+        <a href="history.html" class="nav-link">My Rides</a>
+        <a href="accessibility.html" class="nav-link">Accessibility</a>
+        <a href="login.html" class="nav-login-btn">
+          <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+          Login
+        </a>
+      </div>
+      <button class="mobile-menu-btn">
+        <i data-lucide="menu" style="width: 28px; height: 28px;"></i>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <div class="access-container">
+      <div class="access-header">
+        <h1>Accessibility Preferences</h1>
+        <p>Customize your ride experience. We'll prioritize vehicles that match your specific needs.</p>
+      </div>
+
+      <div class="preferences-sections" id="prefRoot">
+        <div class="loading-state">
+          <i data-lucide="loader-circle" class="animate-spin" style="width: 32px; height: 32px;"></i>
+          <p style="margin-top: 0.5rem;">Loading your preferences...</p>
+        </div>
+      </div>
+
+      <div class="save-container">
+        <button id="saveBtn" class="save-btn">
+          <i data-lucide="save" style="width: 20px; height: 20px;"></i>
+          <span id="saveText">Save Preferences</span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 EcoPool EV. Sustainable & Accessible Mobility.</p>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const preferencesConfig = [
+      {
+        title: 'Mobility Requirements',
+        items: [
+          { id: 'wheelchairRamp', label: 'Wheelchair Ramp / Lift' },
+          { id: 'lowFloor', label: 'Low Floor Entry' },
+          { id: 'extraLegroom', label: 'Extra Legroom' },
+          { id: 'storageSpace', label: 'Mobility Aid Storage' }
+        ]
+      },
+      {
+        title: 'Driver Assistance',
+        items: [
+          { id: 'driverHelp', label: 'Boarding Assistance' },
+          { id: 'doorToDoor', label: 'Door-to-Door Escort' },
+          { id: 'luggageHelp', label: 'Luggage/Equipment Help' }
+        ]
+      },
+      {
+        title: 'Sensory & Environment',
+        items: [
+          { id: 'quietRide', label: 'Quiet Ride (No Music)' },
+          { id: 'minimalScents', label: 'Scent-Free Vehicle' },
+          { id: 'screenReader', label: 'Screen Reader Compatible App' }
+        ]
+      }
+    ];
+
+    (async () => {
+      const user = await Auth.requireLogin();
+      if (!user) return;
+
+      const prefRoot = document.getElementById('prefRoot');
+      const saveBtn = document.getElementById('saveBtn');
+      const saveText = document.getElementById('saveText');
+      let saveTimeout;
+
+      // Load current preferences from server
+      let currentPrefs = {};
+      try {
+        const res = await fetch('/api/preferences');
+        if (res.ok) {
+          const data = await res.json();
+          currentPrefs = data.preferences || {};
+        }
+      } catch { /* use defaults */ }
+
+      // Render sections
+      prefRoot.innerHTML = '';
+      preferencesConfig.forEach(section => {
+        const sectionEl = document.createElement('div');
+        sectionEl.className = 'pref-section';
+        sectionEl.style.marginBottom = '1.5rem';
+        
+        const title = document.createElement('h3');
+        title.textContent = section.title;
+        sectionEl.appendChild(title);
+
+        const gridEl = document.createElement('div');
+        gridEl.className = 'pref-grid';
+        
+        section.items.forEach(item => {
+          const isActive = currentPrefs[item.id] === true;
+          const btn = document.createElement('button');
+          btn.className = 'pref-toggle' + (isActive ? ' active' : '');
+          btn.dataset.prefId = item.id;
+          btn.innerHTML = `
+            <span class="pref-label">${item.label}</span>
+            <div class="pref-checkbox">
+              ${isActive ? '<i data-lucide="check" style="width: 12px; height: 12px; color: white; stroke-width: 3px;"></i>' : ''}
+            </div>
+          `;
+          
+          btn.addEventListener('click', () => {
+            btn.classList.toggle('active');
+            const checkbox = btn.querySelector('.pref-checkbox');
+            if (btn.classList.contains('active')) {
+              checkbox.innerHTML = '<i data-lucide="check" style="width: 12px; height: 12px; color: white; stroke-width: 3px;"></i>';
+              lucide.createIcons();
+            } else {
+              checkbox.innerHTML = '';
+            }
+            resetSaveStatus();
+          });
+          
+          gridEl.appendChild(btn);
+        });
+
+        sectionEl.appendChild(gridEl);
+        prefRoot.appendChild(sectionEl);
+      });
+
+      lucide.createIcons();
+
+      function resetSaveStatus() {
+        saveBtn.classList.remove('saved');
+        saveBtn.disabled = false;
+        saveText.textContent = 'Save Preferences';
+        const icon = saveBtn.querySelector('i');
+        if (icon) {
+           icon.setAttribute('data-lucide', 'save');
+           lucide.createIcons();
+        }
+      }
+
+      saveBtn.addEventListener('click', async () => {
+        // Collect all preferences
+        const prefs = {};
+        document.querySelectorAll('.pref-toggle').forEach(btn => {
+          prefs[btn.dataset.prefId] = btn.classList.contains('active');
+        });
+
+        saveBtn.disabled = true;
+        saveText.textContent = 'Saving...';
+
+        try {
+          const res = await fetch('/api/preferences', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(prefs)
+          });
+
+          if (res.ok) {
+            saveBtn.classList.add('saved');
+            saveText.textContent = 'Preferences Saved!';
+            const icon = saveBtn.querySelector('i');
+            if (icon) {
+              icon.setAttribute('data-lucide', 'check');
+              lucide.createIcons();
+            }
+
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+              resetSaveStatus();
+            }, 3000);
+          } else {
+            saveText.textContent = 'Save Failed';
+            saveBtn.disabled = false;
+          }
+        } catch {
+          saveText.textContent = 'Network Error';
+          saveBtn.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoPool EV - Live Tracking</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    .track-wrapper { display: flex; flex-direction: column; flex: 1; margin: -2rem 0; }
+    @media (min-width: 768px) { .track-wrapper { flex-direction: row; } }
+
+    .map-area { position: relative; flex: 2; height: 50vh; background-color: var(--gray-100); }
+    @media (min-width: 768px) { .map-area { height: auto; } }
+    #trackMap { width: 100%; height: 100%; z-index: 1; }
+    
+    .floating-overlay-eta {
+      position: absolute; top: 1rem; left: 1rem; background-color: rgba(255,255,255,0.95); backdrop-filter: blur(8px);
+      padding: 1rem; border-radius: 0.75rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); z-index: 1000;
+      display: flex; align-items: center; gap: 0.75rem; border: 1px solid var(--gray-100);
+    }
+    .eta-box { background-color: var(--emerald-100); padding: 0.5rem; border-radius: 0.5rem; text-align: center; color: var(--emerald-700); min-width: 60px; }
+    .eta-box span.time { display: block; font-size: 1.25rem; font-weight: 700; }
+    .eta-box span.lbl { font-size: 0.75rem; }
+    
+    .floating-overlay-controls { position: absolute; top: 1rem; right: 1rem; z-index: 1000; display: flex; flex-direction: column; gap: 0.5rem; }
+    .btn-map-ctrl { background-color: white; padding: 0.75rem; border-radius: 9999px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); color: var(--gray-700); transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+    .btn-map-ctrl:hover { color: var(--emerald-600); background-color: var(--emerald-50); }
+
+    .panel-area { 
+      flex: 1; min-width: 380px; max-width: 450px; background-color: white; box-shadow: -10px 0 15px -3px rgba(0,0,0,0.1);
+      display: flex; flex-direction: column; z-index: 20; height: 50vh; overflow-y: auto;
+    }
+    @media (min-width: 768px) { .panel-area { height: auto; } }
+    
+    .panel-header { padding: 1.5rem; background-color: var(--emerald-900); color: white; flex-shrink: 0; }
+    .driver-row { display: flex; align-items: center; gap: 1rem; }
+    .avatar-wrap { position: relative; }
+    .avatar-wrap img { width: 3.5rem; height: 3.5rem; border-radius: 50%; border: 2px solid var(--emerald-400); background-color: var(--gray-200); }
+    .avatar-score { position: absolute; bottom: -0.25rem; right: -0.25rem; background-color: white; color: var(--emerald-900); font-size: 0.75rem; font-weight: 700; padding: 0.125rem 0.375rem; border-radius: 9999px; border: 1px solid var(--emerald-900); }
+    
+    .vital-signs { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--emerald-800); text-align: center; }
+    .vital-signs div { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+    .vital-signs div i { color: var(--emerald-400); }
+    .vital-signs span { font-size: 0.75rem; font-weight: 500; }
+    
+    .panel-body { padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column; gap: 1.5rem; }
+    
+    .status-timeline { position: relative; padding-left: 2rem; border-left: 2px solid var(--emerald-100); display: flex; flex-direction: column; gap: 2rem; }
+    .st-item { position: relative; }
+    .st-dot { position: absolute; left: -2.0625rem; width: 1rem; height: 1rem; border-radius: 50%; background-color: var(--gray-300); border: 2px solid white; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
+    .st-item.active .st-dot { background-color: var(--emerald-500); box-shadow: 0 0 0 2px var(--emerald-100); }
+    .st-item.dim { opacity: 0.5; }
+    
+    .access-note { background-color: var(--blue-50); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--blue-100); display: flex; gap: 0.75rem; }
+    .access-note i { color: var(--blue-600); margin-top: 0.125rem; }
+    .access-note p.title { font-size: 0.875rem; font-weight: 700; color: var(--blue-900); }
+    .access-note p.desc { font-size: 0.75rem; color: var(--blue-700); margin-top: 0.25rem; }
+
+    .panel-footer { padding: 1rem; border-top: 1px solid var(--gray-100); background-color: var(--gray-50); display: flex; flex-direction: column; gap: 0.75rem; }
+    .btn-sos { width: 100%; padding: 0.75rem; background-color: var(--red-50); color: var(--red-700); font-weight: 700; border-radius: 0.75rem; border: 1px solid var(--red-100); display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background-color 0.2s; }
+    .btn-sos:hover { background-color: var(--red-100); }
+    .btn-share { width: 100%; padding: 0.75rem; background-color: white; color: var(--gray-700); font-weight: 700; border-radius: 0.75rem; border: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background-color 0.2s; }
+    .btn-share:hover { background-color: var(--gray-50); }
+
+    .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--gray-400); }
+
+    /* Vehicle marker pulse */
+    .vehicle-marker {
+      width: 32px; height: 32px; background: #064e3b; border: 3px solid white; border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(6, 78, 59, 0.4); }
+      50% { box-shadow: 0 0 0 10px rgba(6, 78, 59, 0); }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar" style="border-bottom: 1px solid rgba(0,0,0,0.1)">
+    <div class="container">
+      <a href="index.html" class="brand group">
+        <div class="brand-icon-wrapper group-hover">
+          <i data-lucide="leaf" style="width:24px; height:24px; stroke-width: 2.5px;"></i>
+        </div>
+        <span>EcoPool EV</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">Book a Ride</a>
+        <a href="history.html" class="nav-link">My Rides</a>
+        <a href="accessibility.html" class="nav-link">Accessibility</a>
+        <a href="login.html" class="nav-login-btn">
+          <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+          Login
+        </a>
+      </div>
+      <button class="mobile-menu-btn">
+        <i data-lucide="menu" style="width: 28px; height: 28px;"></i>
+      </button>
+    </div>
+  </nav>
+
+  <div class="track-wrapper">
+    <div class="map-area">
+      <div id="trackMap"></div>
+      
+      <div class="floating-overlay-eta">
+        <div class="eta-box">
+          <span class="time" id="etaTime">--</span>
+          <span class="lbl">ETA</span>
+        </div>
+        <div>
+          <p style="font-weight: 700; color: var(--gray-900);" id="arrivalText">Loading...</p>
+          <p style="font-size: 0.875rem; color: var(--gray-500);" id="distanceText">Calculating route...</p>
+        </div>
+      </div>
+      
+      <div class="floating-overlay-controls">
+        <button class="btn-map-ctrl" id="centerBtn"><i data-lucide="navigation"></i></button>
+      </div>
+    </div>
+    
+    <div class="panel-area" id="panelArea">
+      <div class="loading-state">
+        <i data-lucide="loader-circle" class="animate-spin" style="width: 32px; height: 32px;"></i>
+        <p style="margin-top: 0.5rem;">Loading ride info...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    let trackMap, vehicleMarker, routeCoords;
+
+    (async () => {
+      const user = await Auth.requireLogin();
+      if (!user) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const rideId = params.get('id');
+      const panelArea = document.getElementById('panelArea');
+
+      if (!rideId) { panelArea.innerHTML = '<div class="loading-state"><p>No ride ID</p></div>'; return; }
+
+      try {
+        const res = await fetch(`/api/rides/${rideId}`);
+        if (!res.ok) throw new Error('Not found');
+        const data = await res.json();
+        const ride = data.ride;
+
+        // ===== INIT MAP =====
+        const hasCoords = ride.originCoords && ride.originCoords.lat && ride.destinationCoords && ride.destinationCoords.lat;
+        trackMap = L.map('trackMap');
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(trackMap);
+
+        const etaMins = parseInt(ride.eta) || 14;
+        document.getElementById('etaTime').textContent = `${etaMins} m`;
+
+        if (hasCoords) {
+          try {
+            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${ride.originCoords.lng},${ride.originCoords.lat};${ride.destinationCoords.lng},${ride.destinationCoords.lat}?overview=full&geometries=geojson`;
+            const routeRes = await fetch(osrmUrl);
+            const routeData = await routeRes.json();
+
+            if (routeData.code === 'Ok' && routeData.routes.length > 0) {
+              routeCoords = routeData.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+              const distKm = (routeData.routes[0].distance / 1000).toFixed(1);
+              const etaCalc = Math.ceil(routeData.routes[0].duration / 60);
+
+              // Draw route
+              L.polyline(routeCoords, { color: '#e5e7eb', weight: 10, opacity: 0.6 }).addTo(trackMap);
+              L.polyline(routeCoords, { color: '#10b981', weight: 5, opacity: 0.9, dashArray: '12 6' }).addTo(trackMap);
+
+              // Start marker
+              const startIcon = L.divIcon({ className: '', html: '<div style="width:16px;height:16px;background:#10b981;border:3px solid white;border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>', iconSize: [16,16], iconAnchor: [8,8] });
+              L.marker(routeCoords[0], { icon: startIcon }).addTo(trackMap).bindPopup(`<b>Start:</b> ${ride.origin}`);
+
+              // End marker
+              const endIcon = L.divIcon({ className: '', html: '<div style="width:16px;height:16px;background:#ef4444;border:3px solid white;border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>', iconSize: [16,16], iconAnchor: [8,8] });
+              L.marker(routeCoords[routeCoords.length - 1], { icon: endIcon }).addTo(trackMap).bindPopup(`<b>Dest:</b> ${ride.destination}`);
+
+              // Animated vehicle marker
+              const carIcon = L.divIcon({ className: '', html: '<div class="vehicle-marker">🚗</div>', iconSize: [32,32], iconAnchor: [16,16] });
+              vehicleMarker = L.marker(routeCoords[0], { icon: carIcon, zIndexOffset: 1000 }).addTo(trackMap);
+
+              trackMap.fitBounds(L.latLngBounds(routeCoords), { padding: [50, 50] });
+
+              // Update info
+              document.getElementById('distanceText').textContent = `${distKm} km remaining`;
+              document.getElementById('etaTime').textContent = `${etaCalc} m`;
+
+              // Arrival time
+              if (ride.time) {
+                const [h, m] = ride.time.split(':').map(Number);
+                const arrH = h + Math.floor((m + etaCalc) / 60);
+                const arrM = (m + etaCalc) % 60;
+                const ampm = arrH >= 12 ? 'PM' : 'AM';
+                document.getElementById('arrivalText').textContent = `Arriving at ${arrH % 12 || 12}:${String(arrM).padStart(2, '0')} ${ampm}`;
+              }
+
+              // Animate vehicle along route
+              let routeIdx = 0;
+              const step = Math.max(1, Math.floor(routeCoords.length / 200));
+              setInterval(() => {
+                if (routeIdx < routeCoords.length - step) {
+                  routeIdx += step;
+                  vehicleMarker.setLatLng(routeCoords[routeIdx]);
+                }
+              }, 300);
+
+              // Center button
+              document.getElementById('centerBtn').addEventListener('click', () => {
+                if (vehicleMarker) trackMap.setView(vehicleMarker.getLatLng(), 15);
+              });
+            }
+          } catch (e) {
+            console.log('Route error:', e);
+            trackMap.setView([ride.originCoords.lat, ride.originCoords.lng], 13);
+          }
+        } else {
+          trackMap.setView([28.6139, 77.209], 12);
+          document.getElementById('arrivalText').textContent = 'Route unavailable';
+          document.getElementById('distanceText').textContent = 'No coordinates stored';
+        }
+
+        // ===== PANEL =====
+        let poolItems = '';
+        if (ride.poolingPartners && ride.poolingPartners.length > 0) {
+          ride.poolingPartners.forEach(p => {
+            poolItems += `<div class="st-item dim"><div class="st-dot"></div><p style="color: var(--gray-900); font-weight: 500;">Pickup ${p.name}</p></div>`;
+          });
+        }
+
+        let accessNote = '';
+        if (ride.accessibilityOptions && ride.accessibilityOptions.length > 0) {
+          accessNote = `<div class="access-note"><i data-lucide="shield"></i><div><p class="title">Accessibility Features Active</p><p class="desc">Driver is aware of ${ride.accessibilityOptions[0].toLowerCase()} requirement and will assist upon arrival.</p></div></div>`;
+        }
+
+        panelArea.innerHTML = `
+          <div class="panel-header">
+            <div class="driver-row">
+              <div class="avatar-wrap">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${ride.driver.avatar}" alt="Driver">
+                <div class="avatar-score">${ride.driver.rating}</div>
+              </div>
+              <div>
+                <h2 style="font-weight: 700; font-size: 1.125rem;">${ride.driver.name}</h2>
+                <p style="color: var(--emerald-300); font-size: 0.875rem;">${ride.driver.vehicle} • ${ride.driver.plate}</p>
+              </div>
+              <div style="margin-left: auto;">
+                <button style="padding: 0.5rem; background-color: var(--emerald-800); border-radius: 9999px; color: white;">
+                  <i data-lucide="phone" style="width: 18px; height: 18px;"></i>
+                </button>
+              </div>
+            </div>
+            <div class="vital-signs">
+              <div><i data-lucide="battery"></i><span id="batteryLabel">82% Charge</span></div>
+              <div><i data-lucide="route"></i><span>${ride.distance || '--'}</span></div>
+              <div><i data-lucide="shield"></i><span>Verified Safe</span></div>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="status-timeline">
+              <div class="st-item active"><div class="st-dot"></div>
+                <p style="font-size: 0.75rem; color: var(--emerald-600); font-weight: 700; text-transform: uppercase; margin-bottom: 0.25rem;">Current Status</p>
+                <p style="color: var(--gray-900); font-weight: 500;">Heading to pickup point</p>
+                <p style="font-size: 0.875rem; color: var(--gray-500); margin-top: 0.25rem;">Following shortest route</p>
+              </div>
+              ${poolItems}
+              <div class="st-item dim"><div class="st-dot"></div><p style="color: var(--gray-900); font-weight: 500;">Drop-off at ${ride.destination}</p></div>
+            </div>
+            ${accessNote}
+          </div>
+          <div class="panel-footer">
+            <button class="btn-sos"><i data-lucide="alert-triangle" style="width: 18px; height: 18px;"></i> Emergency / SOS</button>
+            <button class="btn-share"><i data-lucide="share-2" style="width: 18px; height: 18px;"></i> Share Ride Details</button>
+          </div>`;
+
+        lucide.createIcons();
+
+        // Battery simulation
+        let batteryLevel = 82;
+        const batteryLabel = document.getElementById('batteryLabel');
+        if (batteryLabel) {
+          setInterval(() => { batteryLevel = Math.max(batteryLevel - 0.1, 75); batteryLabel.textContent = Math.floor(batteryLevel) + '% Charge'; }, 2000);
+        }
+
+      } catch (err) {
+        panelArea.innerHTML = `<div class="loading-state"><p style="color: var(--red-500);">Could not load ride</p><a href="history.html" style="color: var(--emerald-600);">Back to rides</a></div>`;
+        document.getElementById('etaTime').textContent = '--';
+        document.getElementById('arrivalText').textContent = 'Unavailable';
+        lucide.createIcons();
+      }
+    })();
+  </script>
+</body>
+</html>
