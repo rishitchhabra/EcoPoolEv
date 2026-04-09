@@ -34,4 +34,29 @@ EcoPool EV is a sustainable and accessible ride-sharing platform frontend design
 - `src/pages/Home.jsx`: Landing page with booking form.
 - `src/pages/RideDetails.jsx`: Ride visualization and details page.
 - `src/components/Navbar.jsx`: Navigation bar.
-# EcoPoolEv
+
+## Vercel Deployment
+
+This project is now configured for Vercel with:
+
+- A serverless API entry at `api/index.js`
+- Shared Express app setup in `app.js`
+- Routing rules in `vercel.json`
+
+### Required Environment Variables (Vercel Project Settings)
+
+- `MONGODB_URI`: MongoDB Atlas connection string
+- `SESSION_SECRET`: Long random secret for session signing
+- `NODE_ENV`: `production`
+
+### Deploy
+
+1. Push this repository to GitHub.
+2. Import the repo in Vercel.
+3. Add the environment variables above in Vercel.
+4. Deploy.
+
+After deployment:
+
+- Static pages are served from the project root.
+- API routes are served from `/api/*` by the Express serverless function.
