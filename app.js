@@ -2,18 +2,16 @@ import 'dotenv/config';
 import express from 'express';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { extname, join } from 'path';
+import { existsSync } from 'fs';
 import connectDB from './server/config/db.js';
 import authRoutes from './server/routes/auth.js';
 import ridesRoutes from './server/routes/rides.js';
 import preferencesRoutes from './server/routes/preferences.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
+const staticRoot = process.cwd();
 
 await connectDB();
 
@@ -38,7 +36,7 @@ app.use(session({
   }
 }));
 
-app.use(express.static(__dirname));
+app.use(express.static(staticRoot));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/rides', ridesRoutes);
@@ -46,6 +44,18 @@ app.use('/api/preferences', preferencesRoutes);
 
 app.get('/', (req, res) => {
   res.redirect('/login.html');
+});
+
+// Support direct navigation to static HTML pages when all paths are rewritten to this function.
+app.get('/:page', (req, res, next) => {
+  const { page } = req.params;
+  if (!page || extname(page)) return next();
+
+  const candidate = join(staticRoot, `${page}.html`);
+  if (existsSync(candidate)) {
+    return res.sendFile(candidate);
+  }
+  return next();
 });
 
 export default app;

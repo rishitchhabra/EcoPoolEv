@@ -1,7 +1,16 @@
 {
+  "functions": {
+    "api/[...all].js": {
+      "includeFiles": [
+        "**/*.html",
+        "css/**/*",
+        "js/**/*"
+      ]
+    }
+  },
   "rewrites": [
     {
-      "source": "/api/:path*",
+      "source": "/:path*",
       "destination": "/api/[...all].js"
     }
   ]
