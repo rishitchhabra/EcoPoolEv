@@ -39,7 +39,7 @@ EcoPool EV is a sustainable and accessible ride-sharing platform frontend design
 
 This project is now configured for Vercel with:
 
-- A serverless API entry at `api/index.js`
+- A catch-all serverless API entry at `api/[...all].js`
 - Shared Express app setup in `app.js`
 - Routing rules in `vercel.json`
 
