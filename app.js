@@ -12,13 +12,24 @@ import preferencesRoutes from './server/routes/preferences.js';
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
 const staticRoot = process.cwd();
-
-await connectDB();
+let dbInitialized = false;
 
 app.set('trust proxy', 1);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(async (req, res, next) => {
+  if (dbInitialized) return next();
+  try {
+    await connectDB();
+    dbInitialized = true;
+    return next();
+  } catch (error) {
+    console.error('DB init error:', error);
+    return res.status(500).json({ error: 'Database connection failed.' });
+  }
+});
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'fallback-secret-key',
