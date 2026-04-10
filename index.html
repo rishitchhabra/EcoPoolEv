@@ -613,12 +613,19 @@
               </label>
             </div>
 
-            <div style="padding-top: 0.5rem; border-top: 1px solid var(--gray-200); margin-top: 1rem;">
+            <div style="padding-top: 0.5rem; border-top: 1px solid var(--gray-200); margin-top: 1rem;" id="accessibilityRequirementsBlock">
               <h2
                 style="font-size: 1.125rem; font-weight: 700; color: var(--gray-900); margin-bottom: 1rem; margin-top: 0.5rem;">
                 <i data-lucide="shield"
                   style="width: 18px; height: 18px; color: var(--emerald-600); display: inline-block; vertical-align: text-bottom;"></i>
                 Accessibility Requirements</h2>
+
+              <p id="accessibilityPrefsHint"
+                style="display:none; margin: 0 0 1rem 0; color: var(--gray-600); font-size: 0.9rem;">
+                No accessibility preferences selected. Set your preferences on
+                <a href="/accessibility.html" style="color: var(--emerald-700); font-weight: 600;">Accessibility</a>
+                to show options here.
+              </p>
 
               <div class="access-section">
                 <h3 style="font-size: 1rem; color: var(--gray-700);">Mobility Requirements</h3>
@@ -726,6 +733,66 @@
   <script>
     // Require login
     Auth.requireLogin();
+
+    const prefToLabelMap = {
+      wheelchairRamp: 'Wheelchair Ramp / Lift',
+      lowFloor: 'Low Floor Entry',
+      extraLegroom: 'Extra Legroom',
+      storageSpace: 'Mobility Aid Storage',
+      driverHelp: 'Boarding Assistance',
+      doorToDoor: 'Door-to-Door Escort',
+      luggageHelp: 'Luggage/Equipment Help',
+      quietRide: 'Quiet Ride (No Music)',
+      minimalScents: 'Scent-Free Vehicle',
+      screenReader: 'Screen Reader Compatible App'
+    };
+
+    async function applyAccessibilityPreferencesFilter() {
+      try {
+        const res = await fetch('/api/preferences');
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const preferences = data.preferences || {};
+        const selectedLabels = new Set(
+          Object.entries(preferences)
+            .filter(([, isEnabled]) => isEnabled === true)
+            .map(([prefKey]) => prefToLabelMap[prefKey])
+            .filter(Boolean)
+        );
+
+        const labels = document.querySelectorAll('.access-label');
+        labels.forEach(label => {
+          const input = label.querySelector('.access-btn');
+          if (!input) return;
+
+          const shouldShow = selectedLabels.has(input.value);
+          label.style.display = shouldShow ? '' : 'none';
+          if (!shouldShow) input.checked = false;
+        });
+
+        document.querySelectorAll('.access-section').forEach(section => {
+          const hasVisible = Array.from(section.querySelectorAll('.access-label'))
+            .some(label => label.style.display !== 'none');
+          section.style.display = hasVisible ? '' : 'none';
+        });
+
+        const noPreferencesSelected = selectedLabels.size === 0;
+        const hint = document.getElementById('accessibilityPrefsHint');
+        const accessSections = document.querySelectorAll('.access-section');
+
+        if (hint) hint.style.display = noPreferencesSelected ? 'block' : 'none';
+
+        // Keep heading visible, but hide empty sections when no preference is set.
+        accessSections.forEach(section => {
+          if (noPreferencesSelected) section.style.display = 'none';
+        });
+      } catch (error) {
+        console.log('Could not load accessibility preferences:', error.message);
+      }
+    }
+
+    applyAccessibilityPreferencesFilter();
 
     // Date defaults
     const dateInput = document.getElementById('dateInput');
